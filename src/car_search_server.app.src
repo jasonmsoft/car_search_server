@@ -1,0 +1,12 @@
+{application, car_search_server,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { car_search_server_app, []}},
+  {env, []}
+ ]}.
