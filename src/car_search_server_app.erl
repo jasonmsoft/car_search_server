@@ -6,14 +6,12 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1, start/0]).
+-export([start/2, stop/1]).
 
 
 %% ===================================================================
 %% custom functions
 %% ===================================================================
-start() ->
-    application:start(?MODULE).
 
 
 %% ===================================================================
@@ -21,6 +19,7 @@ start() ->
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
+    io:format("application start ..... ~n"),
     car_search_server_sup:start_link().
 
 stop(_State) ->

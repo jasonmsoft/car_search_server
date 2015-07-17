@@ -4,7 +4,7 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 17. ÆßÔÂ 2015 10:37
+%%% Created : 17. ï¿½ï¿½ï¿½ï¿½ 2015 10:37
 %%%-------------------------------------------------------------------
 -module(del_handler).
 -author("cdmaji1").
@@ -22,5 +22,5 @@ init(Req, _Opts) ->
 	{ok, Req, #state{}}.
 
 
-terminate(_Reason, Req, State) ->
+terminate(_Reason, _Req, _State) ->
 	ok.

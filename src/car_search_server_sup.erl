@@ -27,5 +27,5 @@ stop() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, [?CHILD(car_search, worker)]} }.
+    {ok, { {one_for_one, 5, 10}, [?CHILD(car_search_server, worker)]} }.
 

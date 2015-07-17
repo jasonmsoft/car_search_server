@@ -4,11 +4,10 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 17. ÆßÔÂ 2015 11:02
 %%%-------------------------------------------------------------------
--module(car_search).
+-module(car_search_server).
 -author("cdmaji1").
-
+-compile([{parse_transform, lager_transform}]).
 -behaviour(gen_server).
 
 %% API
@@ -23,13 +22,28 @@
 	code_change/3,
 	execute_sql/1]).
 
+-export([start/0, test/0]).
+
 -define(SERVER, ?MODULE).
 
 -record(state, {}).
 
+
+
+
+
+
+
 %%%===================================================================
 %%% API
 %%%===================================================================
+start() ->
+	io:format("start car_search_server .. ~n"),
+	application:start(?MODULE).
+
+test()->
+	io:format("test .. ~n").
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -47,17 +61,21 @@ start_link() ->
 
 start_deps() ->
 	lager:start(),
+	lager:info("deps start ........."),
+	Ret = application:start(cowboy),
+	lager:info("cowboy start result : ~p", [Ret]),
 	Dispatch = cowboy_router:compile([
 		{'_', [{"/search", search_handler, []},
 			{"/add", add_handler, []},
 			{"/del", del_handler, []}]}
 	]),
-	{ok, _} = cowboy:start_http('car_search_listener', 100, [{port, 8889}],
+	{ok, _} = cowboy:start_http(http, 100, [{port, 8889}],
 		[{env, [{dispatch, Dispatch}]}]
 	),
+	ok = application:start(emysql),
 	emysql:add_pool('car_search_pool', [{size,1},
-		{user,"carsearch"},
-		{password,"carsearch"},
+		{user,"root"},
+		{password,"123456"},
 		{database,"carsearch"},
 		{encoding,utf8}])
 .
@@ -113,7 +131,7 @@ State :: #state{}) ->
 
 handle_call({'execute_sql', Sql}, _From, State) ->
 	Result = emysql:execute('car_search_pool', Sql),
-	{reply, {ok, Result}, State}.
+	{reply, {ok, Result}, State};
 
 handle_call(_Request, _From, State) ->
 

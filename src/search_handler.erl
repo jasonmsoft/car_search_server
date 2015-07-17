@@ -4,7 +4,7 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 17. ÆßÔÂ 2015 8:33
+%%% Created :  2015 8:33
 %%%-------------------------------------------------------------------
 -module(search_handler).
 -author("cdmaji1").
@@ -22,26 +22,26 @@ init(Req, _Opts) ->
 	CarNo1 = case lists:keyfind(<<"carno">>, 1, Vars) of
 		{_, CarNo} ->
 			CarNo;
-		Any ->
+		_ ->
 			'undefined'
 	end,
 	Name1 = case lists:keyfind(<<"name">>, 1, Vars) of
 		        {_, Name} ->
 			        Name;
-				_Any ->
+				_ ->
 					'undefined'
 	        end,
 	PhoneNo1 = case lists:keyfind(<<"phoneno">>, 1, Vars) of
 		           {_, PhoneNo} ->
 			           PhoneNo;
-		           _Any ->
+		           _ ->
 			           'undefined'
 	           end,
 
 	HouseNo1 = case lists:keyfind(<<"houseno">>, 1, Vars) of
 		           {_, HouseNo} ->
 			           HouseNo;
-		           _Any ->
+		           _ ->
 			           'undefined'
 	           end,
 	Req2 = case create_search_sql(CarNo1, Name1, PhoneNo1, HouseNo1) of
@@ -49,12 +49,13 @@ init(Req, _Opts) ->
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req);
 		Sql ->
 			Result = search(Sql),
+			lager:info("search result is ~p", [Result]),
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'ok':}", Req)
 	end,
 	{ok, Req2, #state{}}.
 
 
-terminate(_Reason, Req, State) ->
+terminate(_Reason, _Req, _State) ->
 	ok.
 
 create_search_sql('undefined', 'undefined', 'undefined', 'undefined') ->
@@ -64,18 +65,18 @@ create_search_sql('undefined', _Name, _PhoneNo, 'undefined') ->
 	{error, <<"param error">>};
 
 create_search_sql(CarNo, 'undefined', 'undefined', 'undefined') ->
-	<<"select * from carsearch where carno = '", CarNo/binary, "'">>;
+	<<"select * from car_info where carno = '", CarNo/binary, "'">>;
 
 create_search_sql('undefined', 'undefined', 'undefined', HouseNo) ->
-	<<"select * from carsearch where houseno = '", HouseNo/binary, "'">>;
+	<<"select * from car_info where houseno = '", HouseNo/binary, "'">>;
 
 create_search_sql(CarNo, _Name, _PhoneNo, HouseNo) ->
-	<<"select * from carsearch where carno = '", CarNo/binary, "' or houseno = '", HouseNo/binary, "'">>.
+	<<"select * from car_info where carno = '", CarNo/binary, "' or houseno = '", HouseNo/binary, "'">>.
 
 
 
-search(Sql) ->
-	noop.
+search(_Sql) ->
+	car_search_server:execute_sql(_Sql).
 
-create_response_body() ->
+create_response_body(Result) ->
 	noop.
