@@ -5,7 +5,9 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  cowboy,
+                  emysql
                  ]},
   {mod, { car_search_server_app, []}},
   {env, []}
