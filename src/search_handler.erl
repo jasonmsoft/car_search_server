@@ -55,7 +55,7 @@ init(Req, _Opts) ->
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req);
 		Sql ->
 			Result = search(Sql),
-			lager:info("search result is ~p", [Result]),
+			lager:info("search result is [~p]", [Result]),
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'ok':}", Req)
 	end,
 	{ok, Req2, #state{}}.
