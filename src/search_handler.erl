@@ -18,7 +18,13 @@
 
 
 init(Req, _Opts) ->
+	lager:info("search proc, Req: ~p", [Req]),
+	lager:info("options :  ~p ", [_Opts]),
+
 	Vars = cowboy_req:parse_qs(Req),
+
+	lager:debug("req parse result : ~p", [Vars]),
+
 	CarNo1 = case lists:keyfind(<<"carno">>, 1, Vars) of
 		{_, CarNo} ->
 			CarNo;
