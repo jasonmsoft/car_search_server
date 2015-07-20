@@ -39,7 +39,8 @@
 %%%===================================================================
 start() ->
 	io:format("start car_search_server .. ~n"),
-	application:start(?MODULE).
+	application:start(?MODULE),
+	io:format("app start over ~n").
 
 test()->
 	io:format("test .. ~n").
@@ -54,14 +55,22 @@ test()->
 -spec(start_link() ->
 	{ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
+	io:format("start deps start ..... ~n"),
 	start_deps(),
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 
 
 start_deps() ->
+	io:format("start car_search_server really start .. ~n"),
 	lager:start(),
 	lager:info("deps start ........."),
+	RetC = application:start(crypto),
+	lager:info("deps crypto start ......... ~p ", [RetC]),
+	Ret1 = application:start(cowlib),
+	lager:info("deps cowlib start ......... ~p ", [Ret1]),
+	Ret2 =  application:start(ranch),
+	lager:info("deps ranch start ......... ~p ", [Ret2]),
 	Ret = application:start(cowboy),
 	lager:info("cowboy start result : ~p", [Ret]),
 	Dispatch = cowboy_router:compile([
