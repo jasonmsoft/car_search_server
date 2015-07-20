@@ -57,7 +57,10 @@ test()->
 start_link() ->
 	io:format("start deps start ..... ~n"),
 	start_deps(),
-	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+	lager:info("##########car_Search_server start deps over"),
+	Ret = gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
+	lager:info("##########car_Search_server start ret ~p", [Ret]),
+	Ret.
 
 
 
@@ -82,16 +85,22 @@ start_deps() ->
 		[{env, [{dispatch, Dispatch}]}]
 	),
 	ok = application:start(emysql),
+
+	lager:debug("emysql start over!!!!"),
+
 	emysql:add_pool('car_search_pool', [{size,1},
 		{user,"root"},
 		{password,"123456"},
-		{database,"carsearch"},
-		{encoding,utf8}])
+		{database,"car_search"},
+		{encoding,utf8},
+		{host,"10.28.163.96"}]),
+	lager:debug("depends start over!!!!")
 .
 
 
 execute_sql(Sql) ->
-	gen_server:call(?MODULE, {'execute_sql', Sql}, 2000).
+	lager:debug("execute sql ~p", [Sql]),
+	gen_server:call(?MODULE, {'execute_sql', Sql}).
 
 
 
@@ -120,6 +129,7 @@ execute_sql(Sql) ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
 init([]) ->
+	lager:info("start search server init..."),
 	{ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -139,11 +149,12 @@ State :: #state{}) ->
 	{stop, Reason :: term(), NewState :: #state{}}).
 
 handle_call({'execute_sql', Sql}, _From, State) ->
+	lager:debug("execute sql  ~p ", [Sql]),
 	Result = emysql:execute('car_search_pool', Sql),
 	{reply, {ok, Result}, State};
 
 handle_call(_Request, _From, State) ->
-
+	lager:info("unhandle call request ~p", [_Request]),
 	{reply, ok, State}.
 
 %%--------------------------------------------------------------------
