@@ -54,9 +54,14 @@ init(Req, _Opts) ->
 		{error, _R} ->
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req);
 		Sql ->
-			Result = search(Sql),
-			lager:info("search result is [~p]", [Result]),
-			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'ok':}", Req)
+			case search(Sql) of
+				{ok, Result} ->
+					JsonResult = jsx:encode([{<<"ok">>, Result}]),
+					lager:debug("json result : ~s", [JsonResult]),
+					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], JsonResult, Req);
+				_Any ->
+					lager:error("search result error , ~p", [_Any])
+			end
 	end,
 	{ok, Req2, #state{}}.
 

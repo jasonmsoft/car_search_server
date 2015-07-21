@@ -7,4 +7,4 @@ carno varchar(50),
 ownername varchar(50),
 phoneno varchar(50),
 houseno varchar(50)
-);
+)DEFAULT CHARSET=utf8;

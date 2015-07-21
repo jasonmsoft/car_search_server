@@ -46,6 +46,18 @@ test()->
 	io:format("test .. ~n").
 
 
+reformat_result(Result) when is_list(Result)->
+	lists:foldl(fun(E, Acc) ->
+					case proplists:get_value(<<"carno">>, E) of
+						undefined ->
+							lager:error("car info record is wrong"),
+							[];
+						_Other ->
+							NewCarNo = io_lib:format("~ts", [])
+					end end,
+		[], Result).
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -149,9 +161,25 @@ State :: #state{}) ->
 	{stop, Reason :: term(), NewState :: #state{}}).
 
 handle_call({'execute_sql', Sql}, _From, State) ->
-	lager:debug("execute sql  ~p ", [Sql]),
+	lager:debug("execute sql  ~ts ", [Sql]),
+	lager:debug("execute sql raw:  ~p ", [Sql]),
+	%Sql2 = binary_to_list(Sql),
+	%BinSql = unicode:characters_to_binary(Sql2),
+	%lager:debug("execute sql 2 ~ts ", [BinSql]),
 	Result = emysql:execute('car_search_pool', Sql),
-	{reply, {ok, Result}, State};
+	case emysql:result_type(Result) of
+		'result' ->
+			JSON = emysql:as_json(Result),
+			Fun = fun(E) -> Var = proplists:get_value(<<"carno">>, E), Var end,
+			Carno = [Fun(E)|| E <-JSON ],
+			lager:debug("car no is ~ts raw: ~p", [Carno, Carno]),
+			lager:debug("search result is not empty : ~p", [JSON]),
+			{reply, {ok, JSON}, State};
+		_Any ->
+			lager:error("search result is error ~p", [_Any]),
+			{reply, {error, Result}, State}
+
+	end;
 
 handle_call(_Request, _From, State) ->
 	lager:info("unhandle call request ~p", [_Request]),
