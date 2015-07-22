@@ -1,3 +1,4 @@
+%% -*- coding: utf-8 -*-
 %%%-------------------------------------------------------------------
 %%% @author cdmaji1
 %%% @copyright (C) 2015, <COMPANY>
@@ -9,6 +10,7 @@
 -author("cdmaji1").
 -compile([{parse_transform, lager_transform}]).
 -behaviour(gen_server).
+-include("../deps/emysql/include/emysql.hrl").
 
 %% API
 -export([start_link/0]).
@@ -46,16 +48,6 @@ test()->
 	io:format("test .. ~n").
 
 
-reformat_result(Result) when is_list(Result)->
-	lists:foldl(fun(E, Acc) ->
-					case proplists:get_value(<<"carno">>, E) of
-						undefined ->
-							lager:error("car info record is wrong"),
-							[];
-						_Other ->
-							NewCarNo = io_lib:format("~ts", [])
-					end end,
-		[], Result).
 
 
 %%--------------------------------------------------------------------
@@ -166,19 +158,31 @@ handle_call({'execute_sql', Sql}, _From, State) ->
 	%Sql2 = binary_to_list(Sql),
 	%BinSql = unicode:characters_to_binary(Sql2),
 	%lager:debug("execute sql 2 ~ts ", [BinSql]),
+	%InsertSql = <<"insert into car_info(carno, ownername, phoneno, houseno) values('川A50H02', '马季', '111', '1-708')">>,
+	%InsertSql1 = unicode:characters_to_list(InsertSql, utf8),
+	%lager:debug("insert sql: ~p , ~n ~ts", [InsertSql1, InsertSql1]),
+	%ResultInsert = emysql:execute('car_search_pool', InsertSql1),
+	%%#error_packet{ msg = Msg } = ResultInsert,
+	%%lager:debug("result insert : ~ts", [Msg]),
+
 	Result = emysql:execute('car_search_pool', Sql),
 	case emysql:result_type(Result) of
 		'result' ->
-			JSON = emysql:as_json(Result),
-			Fun = fun(E) -> Var = proplists:get_value(<<"carno">>, E), Var end,
-			Carno = [Fun(E)|| E <-JSON ],
-			lager:debug("car no is ~ts raw: ~p", [Carno, Carno]),
-			lager:debug("search result is not empty : ~p", [JSON]),
-			{reply, {ok, JSON}, State};
+			lager:debug("result is : ~p", [Result]),
+			#result_packet{rows = Rows} = Result,
+			case Rows of
+				[] ->
+					lager:debug("result is empty"),
+					{reply, {error, <<"not found">>}, State};
+				_Any ->
+					JSON = emysql:as_json(Result),
+					lager:debug("json is : ~p", [JSON]),
+					lager:debug("search result is not empty : ~p", [JSON]),
+					{reply, {ok, JSON}, State}
+			end;
 		_Any ->
 			lager:error("search result is error ~p", [_Any]),
 			{reply, {error, Result}, State}
-
 	end;
 
 handle_call(_Request, _From, State) ->
@@ -230,7 +234,7 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
 State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
-	ok = cowboy:stop_listener('car_search_listener'),
+	ok = cowboy:stop_listener('http'),
 	lager:info("car_search terminate .... ~p ", [_Reason]),
 	ok.
 

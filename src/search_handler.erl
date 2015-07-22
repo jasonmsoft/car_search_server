@@ -1,3 +1,4 @@
+%% -*- coding: utf-8 -*-
 %%%-------------------------------------------------------------------
 %%% @author cdmaji1
 %%% @copyright (C) 2015, <COMPANY>
@@ -27,6 +28,7 @@ init(Req, _Opts) ->
 
 	CarNo1 = case lists:keyfind(<<"carno">>, 1, Vars) of
 		{_, CarNo} ->
+			lager:debug("before trans : ~p", [CarNo]),
 			CarNo;
 		_ ->
 			'undefined'
@@ -60,7 +62,12 @@ init(Req, _Opts) ->
 					lager:debug("json result : ~s", [JsonResult]),
 					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], JsonResult, Req);
 				_Any ->
-					lager:error("search result error , ~p", [_Any])
+					lager:error("search result error , ~p", [_Any]),
+					lager:debug("sssssssss ~p", [<<"{'error': '未找到'}">>]),
+					BinRet = unicode:characters_to_list(<<"{'error': '未找到'}">>, utf8),
+					BinRet2 = unicode:characters_to_binary(BinRet, utf8),
+					lager:debug("error result is ~p    ~p  ~ts", [BinRet, BinRet2, BinRet2]),
+					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json;charset=utf-8">>}],BinRet2, Req)
 			end
 	end,
 	{ok, Req2, #state{}}.
