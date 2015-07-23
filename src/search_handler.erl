@@ -26,32 +26,10 @@ init(Req, _Opts) ->
 
 	lager:debug("req parse result : ~p", [Vars]),
 
-	CarNo1 = case lists:keyfind(<<"carno">>, 1, Vars) of
-		{_, CarNo} ->
-			lager:debug("before trans : ~p", [CarNo]),
-			CarNo;
-		_ ->
-			'undefined'
-	end,
-	Name1 = case lists:keyfind(<<"name">>, 1, Vars) of
-		        {_, Name} ->
-			        Name;
-				_ ->
-					'undefined'
-	        end,
-	PhoneNo1 = case lists:keyfind(<<"phoneno">>, 1, Vars) of
-		           {_, PhoneNo} ->
-			           PhoneNo;
-		           _ ->
-			           'undefined'
-	           end,
-
-	HouseNo1 = case lists:keyfind(<<"houseno">>, 1, Vars) of
-		           {_, HouseNo} ->
-			           HouseNo;
-		           _ ->
-			           'undefined'
-	           end,
+	CarNo1 = get_value(<<"carno">>, Vars, 'undefined'),
+	Name1 = get_value(<<"name">>, Vars, 'undefined'),
+	PhoneNo1 = get_value(<<"phoneno">>, Vars, 'undefined'),
+	HouseNo1 = get_value(<<"houseno">>, Vars, 'undefined'),
 	Req2 = case create_search_sql(CarNo1, Name1, PhoneNo1, HouseNo1) of
 		{error, _R} ->
 			cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req);
@@ -62,11 +40,8 @@ init(Req, _Opts) ->
 					lager:debug("json result : ~s", [JsonResult]),
 					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], JsonResult, Req);
 				_Any ->
-					lager:error("search result error , ~p", [_Any]),
-					lager:debug("sssssssss ~p", [<<"{'error': '未找到'}">>]),
-					BinRet = unicode:characters_to_list(<<"{'error': '未找到'}">>, utf8),
+					BinRet = <<"{'error': 'not found'}">>,
 					BinRet2 = unicode:characters_to_binary(BinRet, utf8),
-					lager:debug("error result is ~p    ~p  ~ts", [BinRet, BinRet2, BinRet2]),
 					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json;charset=utf-8">>}],BinRet2, Req)
 			end
 	end,
@@ -82,19 +57,30 @@ create_search_sql('undefined', 'undefined', 'undefined', 'undefined') ->
 create_search_sql('undefined', _Name, _PhoneNo, 'undefined') ->
 	{error, <<"param error">>};
 
-create_search_sql(CarNo, 'undefined', 'undefined', 'undefined') ->
+create_search_sql(CarNo, _Name, _PhoneNo, 'undefined') ->
 	<<"select * from car_info where carno = '", CarNo/binary, "'">>;
 
-create_search_sql('undefined', 'undefined', 'undefined', HouseNo) ->
+create_search_sql('undefined', _Name, _PhoneNo, HouseNo) ->
 	<<"select * from car_info where houseno = '", HouseNo/binary, "'">>;
 
 create_search_sql(CarNo, _Name, _PhoneNo, HouseNo) ->
-	<<"select * from car_info where carno = '", CarNo/binary, "' or houseno = '", HouseNo/binary, "'">>.
+	<<"select * from car_info where carno = '", CarNo/binary, "' and houseno = '", HouseNo/binary, "'">>.
 
 
 
 search(_Sql) ->
 	car_search_server:execute_sql(_Sql).
+
+
+get_value(Key, Vars, Default) ->
+	case lists:keyfind(Key, 1, Vars) of
+		'false' ->
+			Default;
+		{_, Value} ->
+			Value
+	end.
+
+
 
 create_response_body(Result) ->
 	noop.

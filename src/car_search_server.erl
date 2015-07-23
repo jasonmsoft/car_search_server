@@ -155,16 +155,6 @@ State :: #state{}) ->
 handle_call({'execute_sql', Sql}, _From, State) ->
 	lager:debug("execute sql  ~ts ", [Sql]),
 	lager:debug("execute sql raw:  ~p ", [Sql]),
-	%Sql2 = binary_to_list(Sql),
-	%BinSql = unicode:characters_to_binary(Sql2),
-	%lager:debug("execute sql 2 ~ts ", [BinSql]),
-	%InsertSql = <<"insert into car_info(carno, ownername, phoneno, houseno) values('川A50H02', '马季', '111', '1-708')">>,
-	%InsertSql1 = unicode:characters_to_list(InsertSql, utf8),
-	%lager:debug("insert sql: ~p , ~n ~ts", [InsertSql1, InsertSql1]),
-	%ResultInsert = emysql:execute('car_search_pool', InsertSql1),
-	%%#error_packet{ msg = Msg } = ResultInsert,
-	%%lager:debug("result insert : ~ts", [Msg]),
-
 	Result = emysql:execute('car_search_pool', Sql),
 	case emysql:result_type(Result) of
 		'result' ->
@@ -180,6 +170,9 @@ handle_call({'execute_sql', Sql}, _From, State) ->
 					lager:debug("search result is not empty : ~p", [JSON]),
 					{reply, {ok, JSON}, State}
 			end;
+		'ok' ->
+			lager:debug("execute sql ok ~p", [Result]),
+			{reply, {ok, <<"sql execute success">>}, State};
 		_Any ->
 			lager:error("search result is error ~p", [_Any]),
 			{reply, {error, Result}, State}
