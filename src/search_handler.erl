@@ -41,8 +41,7 @@ init(Req, _Opts) ->
 					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], JsonResult, Req);
 				_Any ->
 					BinRet = <<"{'error': 'not found'}">>,
-					BinRet2 = unicode:characters_to_binary(BinRet, utf8),
-					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json;charset=utf-8">>}],BinRet2, Req)
+					cowboy_req:reply(200, [{<<"content-type">>, <<"application/json;charset=utf-8">>}],BinRet, Req)
 			end
 	end,
 	{ok, Req2, #state{}}.
