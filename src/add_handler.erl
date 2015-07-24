@@ -37,20 +37,28 @@ init(Req, _Opts) ->
 							PhoneNo = get_value(<<"phoneno">>, {JObj}, 'undefined'),
 							HouseNo = get_value(<<"houseno">>, {JObj}, 'undefined'),
 							lager:debug("do add, Carno:~ts name:~ts phoneno:~s houseno: ~s", [CarNo, Name, PhoneNo, HouseNo]),
-							case create_sql(CarNo, Name, PhoneNo, HouseNo) of
-								{error, _R} ->
-									lager:error("param error"),
-									cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req2),
+							SearchSql = create_search_sql(CarNo),
+							case search_dup(SearchSql) of
+								{ok, _R} ->
+									lager:error("dup record exists ~p ", [CarNo]),
+									cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'dump record'}", Req2),
 									{ok, Req, #state{}};
-								Sql ->
-									case insert(Sql) of
-										{ok, _} ->
-											cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'ok': 'insert success'}", Req2),
+								_Other ->
+									case create_sql(CarNo, Name, PhoneNo, HouseNo) of
+										{error, _R} ->
+											lager:error("param error"),
+											cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'param error'}", Req2),
 											{ok, Req, #state{}};
-										_Any ->
-											lager:error("insert error"),
-											cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'insert error'}", Req2),
-											{ok, Req, #state{}}
+										Sql ->
+											case insert(Sql) of
+												{ok, _} ->
+													cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'ok': 'insert success'}", Req2),
+													{ok, Req, #state{}};
+												_Any ->
+													lager:error("insert error"),
+													cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], "{'error': 'insert error'}", Req2),
+													{ok, Req, #state{}}
+											end
 									end
 							end;
 						'false'->
@@ -89,9 +97,17 @@ create_sql(CarNo, Name, PhoneNo, HouseNo) ->
 	<<"insert into car_info(carno, ownername, phoneno, houseno) values( '", CarNo/binary, "', '", Name/binary, "', '", PhoneNo/binary, "', '" ,HouseNo/binary,  "')" >>.
 
 
+create_search_sql(CarNo) ->
+	<<"select * from car_info where carno= '", CarNo/binary, "'">>.
+
 
 insert(_Sql) ->
 	car_search_server:execute_sql(_Sql).
+
+
+search_dup(Sql) ->
+	car_search_server:execute_sql(Sql).
+
 
 
 terminate(_Reason, Req, State) ->

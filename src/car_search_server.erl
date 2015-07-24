@@ -71,7 +71,7 @@ start_link() ->
 start_deps() ->
 	io:format("start car_search_server really start .. ~n"),
 	lager:start(),
-	lager:info("deps start ........."),
+	lager:info("deps lager start ........."),
 	RetC = application:start(crypto),
 	lager:info("deps crypto start ......... ~p ", [RetC]),
 	Ret1 = application:start(cowlib),
@@ -90,7 +90,7 @@ start_deps() ->
 	),
 	ok = application:start(emysql),
 
-	lager:debug("emysql start over!!!!"),
+	lager:debug("deps emysql start !"),
 
 	emysql:add_pool('car_search_pool', [{size,1},
 		{user,"root"},
@@ -98,7 +98,7 @@ start_deps() ->
 		{database,"car_search"},
 		{encoding,utf8},
 		{host,"10.28.163.96"}]),
-	lager:debug("depends start over!!!!")
+	lager:debug("depends start over........")
 .
 
 
@@ -108,6 +108,30 @@ execute_sql(Sql) ->
 
 
 
+%%change atom null to binary <<"null">>
+reformat_ejson(EJson) ->
+	case EJson of
+		PropList when is_list(EJson)->
+			Fun1 = fun(E1, Acc1) ->
+				case E1 of
+					{Key, null} ->
+						[{Key, <<"null">>} | Acc1];
+					_Any ->
+						[E1 | Acc1]
+			    end end,
+			Fun = fun(E, Acc) ->
+				case E of
+					E when is_list(E) ->
+						E2 = lists:foldl(Fun1, [], E),
+						[E2 | Acc];
+					_Any ->
+						[_Any | Acc]
+				end end,
+			lists:foldl(Fun, [], PropList);
+		_Any ->
+			lager:error("result format is wrong! ~p", [_Any]),
+			EJson
+	end.
 
 
 
@@ -154,11 +178,9 @@ State :: #state{}) ->
 
 handle_call({'execute_sql', Sql}, _From, State) ->
 	lager:debug("execute sql  ~ts ", [Sql]),
-	lager:debug("execute sql raw:  ~p ", [Sql]),
 	Result = emysql:execute('car_search_pool', Sql),
 	case emysql:result_type(Result) of
 		'result' ->
-			lager:debug("result is : ~p", [Result]),
 			#result_packet{rows = Rows} = Result,
 			case Rows of
 				[] ->
@@ -166,9 +188,9 @@ handle_call({'execute_sql', Sql}, _From, State) ->
 					{reply, {error, <<"not found">>}, State};
 				_Any ->
 					JSON = emysql:as_json(Result),
-					lager:debug("json is : ~p", [JSON]),
-					lager:debug("search result is not empty : ~p", [JSON]),
-					{reply, {ok, JSON}, State}
+					JSON2 = reformat_ejson(JSON),
+					lager:debug("search result is not empty : ~p", [JSON2]),
+					{reply, {ok, JSON2}, State}
 			end;
 		'ok' ->
 			lager:debug("execute sql ok ~p", [Result]),
